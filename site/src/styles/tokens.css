@@ -1,0 +1,47 @@
+/*
+ * ufi design tokens — the SINGLE source of truth for the landing page AND the Starlight
+ * docs (imported by both via astro.config customCss). Concept: a network-operations-console
+ * (NOC) — near-black canvas, signal cyan/teal accents (Ubiquiti-adjacent), a monospace-forward
+ * display feel and an "● ONLINE" status vibe. Never hand-copy these elsewhere.
+ *
+ * NOTE: the custom-property NAMES are kept stable (the `--rvr-*` prefix) so index.astro and the
+ * Starlight docs.css overrides keep resolving. Only the VALUES change for the ufi NOC theme,
+ * plus a few new tokens (status/signal) appended below.
+ */
+:root {
+  /* palette — near-black NOC canvas with cyan/teal signal accents and a warm off-white text */
+  --rvr-ink-900: #0a0e14; /* canvas */
+  --rvr-ink-850: #0c1119; /* sidebar / deep panel */
+  --rvr-ink-800: #11161f; /* panel */
+  --rvr-ink-700: #161d28; /* raised panel */
+  --rvr-ink-600: #1f2937; /* hover / chip */
+  --rvr-line: #233143; /* hairline / borders */
+  --rvr-fog: #8497ad; /* muted label text */
+  --rvr-mist: #c3cedd; /* body text */
+  --rvr-paper: #f4f1e9; /* warm off-white headings */
+
+  --rvr-current: #22d3ee; /* signal cyan — primary accent */
+  --rvr-current-2: #2dd4bf; /* teal — secondary accent */
+  --rvr-deep: #0ea5e9; /* deeper sky-blue */
+  --rvr-amber: #fbbf24; /* warnings / status-degraded */
+  --rvr-rose: #fb7185; /* "the other way" / danger / offline */
+
+  --rvr-grad-current: linear-gradient(100deg, var(--rvr-current-2), var(--rvr-current) 55%, var(--rvr-deep));
+
+  /* status / signal palette (NOC vibe) — new tokens */
+  --rvr-online: #34d399; /* ● ONLINE */
+  --rvr-degraded: #fbbf24; /* ● DEGRADED */
+  --rvr-offline: #fb7185; /* ● OFFLINE */
+  --rvr-grid: rgba(34, 211, 238, 0.05); /* faint topology grid line color */
+
+  /* type — monospace-forward: a characterful mono for display + a clean mono for code */
+  --rvr-font-display: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+  --rvr-font-body: "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --rvr-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Cascadia Code", monospace;
+
+  /* spacing / radius / motion — tighter, console-grade corners */
+  --rvr-radius: 8px;
+  --rvr-radius-lg: 14px;
+  --rvr-maxw: 1120px;
+  --rvr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}

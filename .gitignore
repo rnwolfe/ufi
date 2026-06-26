@@ -13,6 +13,7 @@ node_modules/
 .astro/
 .vercel/
 .next/
+site/dist/
 
 # Local state / scratch
 *.log
