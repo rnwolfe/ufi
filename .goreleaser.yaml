@@ -1,0 +1,61 @@
+version: 2
+
+project_name: ufi
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: ufi
+    main: ./cmd/ufi
+    binary: ufi
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/rnwolfe/ufi/internal/version.version={{.Version}}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: ufi
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+# SBOMs are generated with syft — the release workflow MUST install it first
+# (anchore/sbom-action/download-syft@v0), or `goreleaser release` dies with
+# "syft: executable file not found". See .github/workflows/release.yml.
+sboms:
+  - artifacts: archive
+
+homebrew_casks:
+  - repository:
+      owner: rnwolfe
+      name: homebrew-tap
+      token: "{{ .Env.GORELEASER_TOKEN }}"
+    homepage: "https://github.com/rnwolfe/ufi/"
+    # brew audit: no leading article, no trailing period.
+    description: "Agent-friendly example CLI (agent-cli-factory reference)"
+    # Unsigned binaries get Gatekeeper-quarantined; strip the attribute on install.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ufi"]
+          end
+
+release:
+  draft: false
+
+changelog:
+  use: github
+  sort: asc

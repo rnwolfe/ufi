@@ -1,0 +1,42 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history: version + changelog need it
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+
+      # .goreleaser.yaml generates SBOMs via syft, which isn't on the runner by default —
+      # without this the release dies with "syft: executable file not found".
+      - uses: anchore/sbom-action/download-syft@v0
+
+      - uses: goreleaser/goreleaser-action@v7
+        with:
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT needed because the Homebrew tap lives in a separate repo.
+          GORELEASER_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
+
+      # attest-build-provenance fails on private user-owned repos; skip there.
+      - uses: actions/attest-build-provenance@v3
+        if: ${{ !github.event.repository.private }}
+        with:
+          subject-path: "dist/*.tar.gz, dist/*.zip, dist/checksums.txt"
