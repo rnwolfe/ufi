@@ -73,6 +73,12 @@ When the **value proposition, command surface, flags, exit codes, or brand** cha
 4. Rebuild (`cd site && pnpm build`) so `llms.txt` regenerates, and keep the embedded
    `internal/skill/SKILL.md` aligned (it's the agent contract shipped in the binary).
 
+**Docs are part of "done"** — a change to the command surface, flags, exit codes, or behavior is
+not complete until its docs page is updated in the **same commit/PR**. The docs were built by the
+`harvest-docs` skill (written from the real source, reviewed against it); never hand-author thin
+replacements. At release time, run **`harvest-docs` in drift mode** (re-harvest only the pages
+whose source changed since the last tag) as the backstop, then rebuild so `llms.txt` is current.
+
 Build/preview the site: `cd site && pnpm build` / `pnpm dev` (binds 0.0.0.0). Deploy is Vercel
 (`uficli.sh`, pending domain purchase; live preview at the project's `*.vercel.app` alias).
 

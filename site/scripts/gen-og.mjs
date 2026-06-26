@@ -26,11 +26,20 @@ if (!CHROME) { console.error("No Chrome/Chromium found (set CHROME_BIN)."); proc
 const pages = [
   { slug: "default", title: "An agent-friendly CLI for UniFi Network", sub: "Read-only by default · official local Integration API" },
   { slug: "index", title: "An agent-friendly CLI for Ubiquiti UniFi Network", sub: "Mutations gated · config reviewed by hash · bounded JSON" },
-  { slug: "getting-started", title: "Getting started", sub: "Describe the binary offline, then point it at your console" },
-  { slug: "auth", title: "Authentication & security", sub: "X-API-KEY · stdin → OS keyring · doctor · threat model" },
+  { slug: "getting-started", title: "Quickstart", sub: "Describe the binary offline, then point it at your console" },
+  { slug: "installation", title: "Installation", sub: "brew · go install · curl | sh · prebuilt binaries" },
+  { slug: "auth", title: "Authentication", sub: "X-API-KEY · stdin → OS keyring · doctor · full-admin key" },
+  { slug: "safety-model", title: "The safety model", sub: "Read-only default · the gate · reviewed apply <hash>" },
+  { slug: "output", title: "Output, pagination & projection", sub: "Bounded JSON envelope · --select · cursor · fencing" },
+  { slug: "inspect", title: "Inspecting your network", sub: "Devices · clients · WiFi · networks — bounded JSON" },
+  { slug: "vouchers", title: "Vouchers & guest access", sub: "Hotspot vouchers · guest authorize — gated" },
   { slug: "config", title: "Reviewed config — apply <hash>", sub: "--dry-run → plan + hash → ufi apply <hash>" },
+  { slug: "agents", title: "Driving ufi from an agent", sub: "Self-describing · fenced · mutation-gated · token-disciplined" },
   { slug: "commands", title: "Command reference", sub: "Every command, flag, and exit code — reads safe by default" },
-  { slug: "agents", title: "For agents", sub: "Self-describing · fenced · mutation-gated · token-disciplined" },
+  { slug: "flags-env", title: "Flags & environment", sub: "Every global flag and UNIFI_*/UFI_* variable" },
+  { slug: "exit-codes", title: "Exit codes", sub: "Stable, documented codes an agent can branch on" },
+  { slug: "errors", title: "Errors & troubleshooting", sub: "{error, code, remediation} · doctor · common fixes" },
+  { slug: "contributing", title: "Development", sub: "Build · test · the schema golden gate · extend" },
 ];
 
 const card = (title, sub) => `<!doctype html><html><head><meta charset="utf-8"/>

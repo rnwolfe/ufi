@@ -5,7 +5,7 @@
 import Default from "@astrojs/starlight/components/Head.astro";
 
 const SITE = "https://uficli.sh";
-const known = ["getting-started", "auth", "config", "commands", "agents"];
+const known = ["getting-started", "installation", "auth", "safety-model", "output", "inspect", "vouchers", "config", "agents", "commands", "flags-env", "exit-codes", "errors", "contributing"];
 const id = (Astro.props.entry?.id ?? "").replace(/\.(md|mdx)$/, "");
 const og = `${SITE}/og/${known.includes(id) ? id : "default"}.png`;
 ---
