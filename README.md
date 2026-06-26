@@ -9,8 +9,9 @@ machine-discoverable (`schema --json`), structured errors + stable exit codes, b
 output, default-deny mutations with `--dry-run` previews, and prompt-injection fencing of
 network-supplied text — all in a single static binary.
 
-> **Status: scaffold.** The command surface and agent-CLI contract are complete and tested; the
-> UniFi API calls are being wired (see `AGENTS.md`). Not yet released.
+> **Status: implemented, pre-release.** Reads, gated mutations, and the declarative-config
+> `apply <hash>` flow are wired and validated live against UniFi Network 10.4.57. The Site Manager
+> cloud commands (`ufi cloud …`) are implemented but unverified (no cloud key yet). Not yet tagged.
 
 ## Install
 

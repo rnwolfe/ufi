@@ -21,30 +21,29 @@ go run ./cmd/ufi --help         # example-led help
 - `internal/cli/helpers.go` — list envelope, the gated-action / idempotent-delete /
   config-preview (`apply <hash>`) helpers.
 - `internal/cli/{device,core,config,cloud}.go` — the noun-verb command surface.
-- `internal/cli/misc.go` — `auth`/`doctor`/`schema`/`agent`/`version` skeletons.
-- `internal/output/`, `internal/errs/` — output discipline + exit-code table. **Don't touch.**
+- `internal/cli/misc.go` — `auth`/`doctor`/`schema`/`agent`/`version`.
+- `internal/output/`, `internal/errs/` — output discipline + exit-code table.
 - `internal/skill/SKILL.md` — embedded in the binary (`ufi agent` prints it).
-- `internal/store/` — **placeholder target** (local JSON). Replaced by the real client in cli-implement.
+- `internal/unifi/` — the API client (Integration + Site Manager): `X-API-KEY`, self-signed-TLS
+  escape hatch, offset→opaque-cursor pagination, error classification, generic snake_casing.
+- `internal/auth/` — env → OS keyring → 0600-file credential resolution.
+- `internal/plan/` — config-plan persistence for `ufi apply <hash>`.
 - `spec.md` — single source of truth. `integration-openapi.json` — the console's own OpenAPI 3.1
   spec (verified on UniFi Network 10.4.57), the authoritative endpoint/field/enum reference.
 
-## Status: SCAFFOLD (cli-implement is next)
-The contract surface is complete and green; the **UniFi logic is not wired yet**. Reads emit
-placeholder envelopes/objects; single-target mutations gate + preview under `--dry-run` and
-return `NOT_IMPLEMENTED` on real execution; config writes emit a plan + hash but don't persist.
+## Status: IMPLEMENTED (local API validated live on Network 10.4.57)
+Reads, single-target mutations, declarative-config preview/apply, auth (keyring), doctor, and
+untrusted-text fencing are wired and validated against real hardware. Tests: offline contract +
+mock-console integration + `unifi` unit tests, with a schema-golden CI gate (`go test ./...`).
 
-### What cli-implement must wire (read `spec.md` + `integration-openapi.json` first)
-- Replace `internal/store/` with a UniFi HTTP client (`internal/unifi/`): `X-API-KEY` header,
-  base `https://{host}/proxy/network/integration/v1/`, self-signed-TLS handling (`--insecure`),
-  offset/limit/filter pagination (`{offset,limit,count,totalCount,data}` → `nextCursor`).
-- `internal/auth/` with the **OS keyring** (env → keyring → `0600` file; OS-native backends only,
-  no passphrase-prompt backend) + `auth login/status/logout`; redact keys everywhere.
-- Map upstream errors `{statusCode,statusName,code,message,...}` → the exit-code table (incl. the
-  Zone-Based-Firewall `400 api.firewall.zone-based-firewall-not-configured` → `unsupported`).
-- Implement the Site Manager cloud client (`ufi cloud …`) with `Retry-After` / 429 backoff.
-- Persist config plans under `$XDG_STATE_HOME/ufi/plans/<hash>.json` and make `ufi apply <hash>` execute them.
-- camelCase wire → snake_case output mapping (see `spec.md` "Wire vs. output naming").
-- Wrap network-controlled free text (device/client/SSID/voucher names/notes) as untrusted (§8).
+### Known follow-ups
+- **Site Manager cloud** (`ufi cloud …`) is implemented but **unvalidated** — no cloud API key
+  was on hand at build time. Paths follow spec.md; `isp-metrics` hardcodes the `/5m` window.
+  Verify with a real key (`UNIFI_CLOUD_API_KEY` from unifi.ui.com) before relying on it.
+- Server-side `--filter` (RSQL) is plumbed in the client (`unifi.ListOpts.Filter`) but not yet
+  exposed as a flag — agents over-fetch then client-filter for now.
+- Config `--data` bodies are passed through opaquely (validated only as "is it JSON"); the
+  console validates the rest and returns structured errors.
 
 ## Conventions
 - stdout = data, stderr = everything else. JSON is 2-space, HTML-escaping off.
