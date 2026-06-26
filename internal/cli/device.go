@@ -1,7 +1,5 @@
 package cli
 
-import "github.com/rnwolfe/ufi/internal/errs"
-
 // DeviceCmd groups device subcommands (local Integration API: /sites/{id}/devices).
 type DeviceCmd struct {
 	List      DeviceListCmd      `cmd:"" help:"List adopted devices for a site."`
@@ -13,37 +11,20 @@ type DeviceCmd struct {
 
 type DeviceListCmd struct{}
 
-// Run lists devices. Backed by the placeholder store until cli-implement wires the real
-// GET /sites/{id}/devices call; returns the stable list envelope either way.
-func (c *DeviceListCmd) Run(rt *Runtime) error {
-	devs, err := rt.Store.List()
-	if err != nil {
-		return errs.New(errs.ExitConfig, "STORE_ERROR", err.Error(), "check the store path / UFI_STORE")
-	}
-	return rt.Out.Emit(listEnvelope(devs, len(devs), nil))
-}
+func (c *DeviceListCmd) Run(rt *Runtime) error { return rt.siteList("devices", "name") }
 
 type DeviceGetCmd struct {
 	ID string `arg:"" help:"Device id."`
 }
 
-func (c *DeviceGetCmd) Run(rt *Runtime) error {
-	d, ok, err := rt.Store.Get(c.ID)
-	if err != nil {
-		return errs.New(errs.ExitConfig, "STORE_ERROR", err.Error(), "check the store path")
-	}
-	if !ok {
-		return errs.NotFound("device", c.ID)
-	}
-	return rt.Out.Emit(d)
-}
+func (c *DeviceGetCmd) Run(rt *Runtime) error { return rt.siteGet("devices/"+c.ID, "name") }
 
 type DeviceStatsCmd struct {
 	ID string `arg:"" help:"Device id."`
 }
 
 func (c *DeviceStatsCmd) Run(rt *Runtime) error {
-	return rt.emitPlaceholderObject()
+	return rt.siteGet("devices/" + c.ID + "/statistics/latest")
 }
 
 type DeviceRestartCmd struct {
@@ -51,14 +32,18 @@ type DeviceRestartCmd struct {
 }
 
 func (c *DeviceRestartCmd) Run(rt *Runtime) error {
-	return rt.gatedAction("device restart", "RESTART", map[string]any{"id": c.ID})
+	return rt.siteAction("device restart", "devices/"+c.ID+"/actions",
+		map[string]any{"action": "RESTART"},
+		map[string]any{"action": "RESTART", "id": c.ID})
 }
 
 type DevicePortCycleCmd struct {
 	ID   string `arg:"" help:"Device id."`
-	Port int    `arg:"" help:"Switch port index."`
+	Port int    `arg:"" help:"Switch port index (portIdx)."`
 }
 
 func (c *DevicePortCycleCmd) Run(rt *Runtime) error {
-	return rt.gatedAction("device port-cycle", "POWER_CYCLE", map[string]any{"id": c.ID, "port": c.Port})
+	return rt.siteAction("device port-cycle", "devices/"+c.ID+"/interfaces/ports/"+itoa(c.Port)+"/actions",
+		map[string]any{"action": "POWER_CYCLE"},
+		map[string]any{"action": "POWER_CYCLE", "id": c.ID, "port": c.Port})
 }

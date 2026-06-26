@@ -199,8 +199,12 @@ offset (`offset`/`limit`, envelope `{offset,limit,count,totalCount,data}`) inter
 cursor is an **opaque** token (base64 offset), not a raw integer, so the wire format stays
 stable if pagination changes.
 
-Conventions: snake_case fields; byte counters `*_bytes`; durations `*_s`/`*_min`; timestamps
-RFC3339 strings (`*_at`) — never raw epoch. `schema --json` emits the full command tree, every
+**Field naming (as shipped):** output mirrors the official API's field set, transformed
+**generically** from the wire's camelCase to snake_case (`macAddress`→`mac_address`,
+`uptimeSec`→`uptime_sec`, `connectedAt`→`connected_at`, `vlanId`→`vlan_id`). The "Key output
+fields" names in the command tables above are *illustrative* of each resource, not hand-curated
+renames — the actual keys are the API's own, snake_cased — which keeps the mapping robust and
+append-only as Ubiquiti adds fields. `schema --json` emits the full command tree, every
 flag, the exit-code table, and live safety state (`allow_mutations`, `dry_run`, `no_input`),
 reflected from the kong grammar so it can't drift. New fields may be added; existing fields are
 never removed or retyped (a `schema --json` golden test is a required CI gate).
@@ -263,8 +267,9 @@ maps `code`/`statusCode` → our exit-code table and surfaces `message` as the s
 ## Prompt-injection surface
 Several read commands return **free text the network's own devices/users control** — a hostile
 guest could name their device `Ignore previous instructions and …`. Per contract §8, these
-fields are fenced as untrusted via **`--wrap-untrusted` (default-ON in agent mode)**:
-`client.name`, `client.hostname`, `client.note`; `device.name`; `wifi.ssid`; `voucher.note`.
-They are delimited as untrusted data, never emitted as bare text an agent might read as
-instructions. (`client list`/`get`, `device list`/`get`, `wifi list`/`get`, `voucher list`
-are the carriers.)
+fields are fenced as untrusted, **default-ON in agent mode** (JSON output or non-TTY stdout),
+disablable with **`--no-fence`**: the carriers are `client.name`/`hostname`/`note`,
+`device.name`, `wifi` SSID `name`, and `voucher` `name`/`note` (`client list|get`,
+`device list|get`, `wifi list|get`, `voucher list`). Each value is wrapped
+`[UNTRUSTED_DATA_BEGIN] … [UNTRUSTED_DATA_END]`, never emitted as bare text an agent might read
+as instructions. (Operator-set fields like `site.name`/`network.name` are NOT fenced.)

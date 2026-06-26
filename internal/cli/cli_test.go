@@ -24,26 +24,6 @@ func useTempStore(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 }
 
-// Reads return the stable list envelope {schemaVersion, items, count, nextCursor}.
-func TestDeviceListEmptyEnvelope(t *testing.T) {
-	useTempStore(t)
-	out, _, code := run(t, "device", "list", "--json")
-	if code != 0 {
-		t.Fatalf("exit = %d, want 0", code)
-	}
-	var env map[string]any
-	if err := json.Unmarshal([]byte(out), &env); err != nil {
-		t.Fatalf("stdout not valid JSON: %v\n%s", err, out)
-	}
-	if _, ok := env["schemaVersion"]; !ok {
-		t.Fatalf("envelope missing schemaVersion: %s", out)
-	}
-	items, ok := env["items"].([]any)
-	if !ok || len(items) != 0 {
-		t.Fatalf("want empty items array, got %v", env["items"])
-	}
-}
-
 func TestMutationBlockedByDefault(t *testing.T) {
 	useTempStore(t)
 	out, errb, code := run(t, "device", "restart", "d1", "--json")
@@ -105,18 +85,6 @@ func TestApplyUnknownHash(t *testing.T) {
 	}
 	if !strings.Contains(errb, "PLAN_NOT_FOUND") {
 		t.Fatalf("stderr missing PLAN_NOT_FOUND: %s", errb)
-	}
-}
-
-// Idempotent delete: removing an already-gone target is a soft success (contract §9).
-func TestIdempotentVoucherDelete(t *testing.T) {
-	useTempStore(t)
-	out, _, code := run(t, "voucher", "delete", "v999", "--allow-mutations", "--json")
-	if code != 0 {
-		t.Fatalf("delete-missing exit = %d, want 0 (idempotent)", code)
-	}
-	if !strings.Contains(out, "\"existed\"") {
-		t.Fatalf("missing existed field: %s", out)
 	}
 }
 

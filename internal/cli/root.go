@@ -12,9 +12,9 @@ import (
 
 	"github.com/alecthomas/kong"
 
+	"github.com/rnwolfe/ufi/internal/auth"
 	"github.com/rnwolfe/ufi/internal/errs"
 	"github.com/rnwolfe/ufi/internal/output"
-	"github.com/rnwolfe/ufi/internal/store"
 )
 
 // CLI is the kong grammar. Global flags are the universal agent-CLI contract surface;
@@ -29,6 +29,7 @@ type CLI struct {
 	Cursor   string `help:"Opaque pagination cursor from a previous response's nextCursor."`
 	Concise  bool   `help:"Terser output (default)."`
 	Detailed bool   `help:"Richer output."`
+	NoFence  bool   `name:"no-fence" help:"Disable untrusted-text fencing of network-controlled names/notes (on by default in agent mode)."`
 
 	// Safety (contract §2)
 	AllowMutations bool `help:"Permit state-changing operations (off by default)."`
@@ -39,6 +40,7 @@ type CLI struct {
 
 	// UniFi connection
 	Host     string `env:"UNIFI_HOST" help:"UniFi console base URL or IP, e.g. https://192.168.1.1."`
+	SiteRef  string `name:"site" env:"UNIFI_SITE" help:"Site id, name, or reference (default: the only site)."`
 	Insecure bool   `env:"UNIFI_INSECURE" help:"Skip TLS verification (consoles ship a self-signed cert). Off by default; warns when on."`
 	UseCloud bool   `name:"cloud" help:"Route the read through the Site Manager cloud API (api.ui.com) instead of the local console."`
 
@@ -73,8 +75,9 @@ type CLI struct {
 type Runtime struct {
 	Cfg   *CLI
 	Out   *output.Writer
-	Store *store.Store
+	Creds auth.Creds
 	Stdin io.Reader
+	Fence bool // wrap network-controlled free text as untrusted (contract §8)
 }
 
 // Guard enforces the read-only-by-default mutation gate (contract §2).
@@ -135,7 +138,11 @@ func newRuntime(cfg *CLI, stdin io.Reader, stdout, stderr io.Writer) *Runtime {
 		Stdout: stdout, Stderr: stderr,
 		Format: format, Color: color, Limit: cfg.Limit, Select: sel,
 	}
-	return &Runtime{Cfg: cfg, Out: w, Store: store.New(store.DefaultPath()), Stdin: stdin}
+	creds := auth.Resolve(cfg.Host, cfg.Insecure)
+	// Agent mode = JSON output or a non-TTY stdout; fence untrusted text there by default.
+	agent := format == output.FormatJSON || !isTTY(stdout)
+	fence := !cfg.NoFence && agent
+	return &Runtime{Cfg: cfg, Out: w, Creds: creds, Stdin: stdin, Fence: fence}
 }
 
 func isTTY(w io.Writer) bool {

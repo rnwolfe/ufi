@@ -1,15 +1,21 @@
 package cli
 
 // Core read-first nouns + low-stakes actions beyond device (info, site, client, wifi, voucher).
-// Reads emit placeholder envelopes/objects until cli-implement wires the real UniFi client;
-// mutations are gated and preview under --dry-run.
 
 // --- info -------------------------------------------------------------------
 
 type InfoCmd struct{}
 
 func (c *InfoCmd) Run(rt *Runtime) error {
-	return rt.emitPlaceholderObject() // GET /info → {application_version, capabilities}
+	cl, err := rt.local()
+	if err != nil {
+		return err
+	}
+	v, err := cl.GetObject(rt.ctx(), "/info")
+	if err != nil {
+		return err
+	}
+	return rt.Out.Emit(v)
 }
 
 // --- site -------------------------------------------------------------------
@@ -20,7 +26,17 @@ type SiteCmd struct {
 
 type SiteListCmd struct{}
 
-func (c *SiteListCmd) Run(rt *Runtime) error { return rt.emitEmptyList() }
+func (c *SiteListCmd) Run(rt *Runtime) error {
+	cl, err := rt.local()
+	if err != nil {
+		return err
+	}
+	res, err := cl.List(rt.ctx(), "/sites", rt.listOpts())
+	if err != nil {
+		return err
+	}
+	return rt.emitList(res)
+}
 
 // --- client -----------------------------------------------------------------
 
@@ -33,37 +49,43 @@ type ClientCmd struct {
 
 type ClientListCmd struct{}
 
-func (c *ClientListCmd) Run(rt *Runtime) error { return rt.emitEmptyList() }
+func (c *ClientListCmd) Run(rt *Runtime) error {
+	return rt.siteList("clients", "name", "hostname", "note")
+}
 
 type ClientGetCmd struct {
 	ID string `arg:"" help:"Client id."`
 }
 
-func (c *ClientGetCmd) Run(rt *Runtime) error { return rt.emitPlaceholderObject() }
+func (c *ClientGetCmd) Run(rt *Runtime) error {
+	return rt.siteGet("clients/"+c.ID, "name", "hostname", "note")
+}
 
 type ClientAuthorizeCmd struct {
 	ID      string `arg:"" help:"Client id."`
-	Minutes int    `help:"Time limit in minutes."`
-	DataMB  int    `name:"data-mb" help:"Data usage limit in MB."`
-	RxKbps  int    `name:"rx-kbps" help:"Download rate limit (kbps)."`
-	TxKbps  int    `name:"tx-kbps" help:"Upload rate limit (kbps)."`
+	Minutes int    `help:"Time limit in minutes (timeLimitMinutes)."`
+	DataMB  int    `name:"data-mb" help:"Data usage limit in MB (dataUsageLimitMBytes)."`
+	RxKbps  int    `name:"rx-kbps" help:"Download rate limit, kbps (rxRateLimitKbps)."`
+	TxKbps  int    `name:"tx-kbps" help:"Upload rate limit, kbps (txRateLimitKbps)."`
 }
 
 func (c *ClientAuthorizeCmd) Run(rt *Runtime) error {
-	target := map[string]any{"id": c.ID}
+	body := map[string]any{"action": "AUTHORIZE_GUEST_ACCESS"}
+	preview := map[string]any{"action": "AUTHORIZE_GUEST_ACCESS", "id": c.ID}
 	if c.Minutes > 0 {
-		target["minutes"] = c.Minutes
+		body["timeLimitMinutes"] = c.Minutes
+		preview["minutes"] = c.Minutes
 	}
 	if c.DataMB > 0 {
-		target["data_mb"] = c.DataMB
+		body["dataUsageLimitMBytes"] = c.DataMB
 	}
 	if c.RxKbps > 0 {
-		target["rx_kbps"] = c.RxKbps
+		body["rxRateLimitKbps"] = c.RxKbps
 	}
 	if c.TxKbps > 0 {
-		target["tx_kbps"] = c.TxKbps
+		body["txRateLimitKbps"] = c.TxKbps
 	}
-	return rt.gatedAction("client authorize", "AUTHORIZE_GUEST_ACCESS", target)
+	return rt.siteAction("client authorize", "clients/"+c.ID+"/actions", body, preview)
 }
 
 type ClientUnauthorizeCmd struct {
@@ -71,7 +93,9 @@ type ClientUnauthorizeCmd struct {
 }
 
 func (c *ClientUnauthorizeCmd) Run(rt *Runtime) error {
-	return rt.gatedAction("client unauthorize", "UNAUTHORIZE_GUEST_ACCESS", map[string]any{"id": c.ID})
+	return rt.siteAction("client unauthorize", "clients/"+c.ID+"/actions",
+		map[string]any{"action": "UNAUTHORIZE_GUEST_ACCESS"},
+		map[string]any{"action": "UNAUTHORIZE_GUEST_ACCESS", "id": c.ID})
 }
 
 // --- wifi -------------------------------------------------------------------
@@ -83,13 +107,13 @@ type WifiCmd struct {
 
 type WifiListCmd struct{}
 
-func (c *WifiListCmd) Run(rt *Runtime) error { return rt.emitEmptyList() }
+func (c *WifiListCmd) Run(rt *Runtime) error { return rt.siteList("wifi/broadcasts", "name") }
 
 type WifiGetCmd struct {
 	ID string `arg:"" help:"WiFi broadcast id."`
 }
 
-func (c *WifiGetCmd) Run(rt *Runtime) error { return rt.emitPlaceholderObject() }
+func (c *WifiGetCmd) Run(rt *Runtime) error { return rt.siteGet("wifi/broadcasts/"+c.ID, "name") }
 
 // --- voucher ----------------------------------------------------------------
 
@@ -101,23 +125,29 @@ type VoucherCmd struct {
 
 type VoucherListCmd struct{}
 
-func (c *VoucherListCmd) Run(rt *Runtime) error { return rt.emitEmptyList() }
+func (c *VoucherListCmd) Run(rt *Runtime) error {
+	return rt.siteList("hotspot/vouchers", "name", "note")
+}
 
+// VoucherCreateCmd — the API requires name + timeLimitMinutes.
 type VoucherCreateCmd struct {
+	Name    string `arg:"" help:"Voucher note/name (required by the API)."`
+	Minutes int    `required:"" help:"Time limit per voucher in minutes (timeLimitMinutes, required)."`
 	Count   int    `default:"1" help:"How many vouchers to generate."`
-	Minutes int    `help:"Time limit per voucher (minutes)."`
-	Note    string `help:"Voucher note."`
+	Guests  int    `help:"Authorized guests per voucher (authorizedGuestLimit)."`
+	DataMB  int    `name:"data-mb" help:"Data usage limit in MB (dataUsageLimitMBytes)."`
 }
 
 func (c *VoucherCreateCmd) Run(rt *Runtime) error {
-	target := map[string]any{"count": c.Count}
-	if c.Minutes > 0 {
-		target["minutes"] = c.Minutes
+	body := map[string]any{"name": c.Name, "timeLimitMinutes": c.Minutes, "count": c.Count}
+	if c.Guests > 0 {
+		body["authorizedGuestLimit"] = c.Guests
 	}
-	if c.Note != "" {
-		target["note"] = c.Note
+	if c.DataMB > 0 {
+		body["dataUsageLimitMBytes"] = c.DataMB
 	}
-	return rt.gatedAction("voucher create", "voucher.create", target)
+	preview := map[string]any{"action": "voucher.create", "name": c.Name, "minutes": c.Minutes, "count": c.Count}
+	return rt.siteAction("voucher create", "hotspot/vouchers", body, preview)
 }
 
 type VoucherDeleteCmd struct {
@@ -125,5 +155,5 @@ type VoucherDeleteCmd struct {
 }
 
 func (c *VoucherDeleteCmd) Run(rt *Runtime) error {
-	return rt.idempotentDelete("voucher delete", "voucher", c.ID)
+	return rt.siteDelete("voucher delete", "hotspot/vouchers/"+c.ID, "voucher", c.ID)
 }

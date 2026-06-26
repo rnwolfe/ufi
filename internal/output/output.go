@@ -45,6 +45,25 @@ func (w *Writer) Emit(v any) error {
 	if err := json.Unmarshal(b, &g); err != nil {
 		return err
 	}
+
+	// Envelope-aware: for a list envelope { items: [...] }, --select/--limit target the items,
+	// not the envelope keys. JSON keeps the envelope (with cursor/count); human formats render
+	// the items table directly.
+	if env, items, ok := splitEnvelope(g); ok {
+		if len(w.Select) > 0 {
+			items, _ = applySelect(items, w.Select).([]any)
+		}
+		if lim := w.applyLimit(items); lim != nil {
+			items, _ = lim.([]any)
+		}
+		if w.Format == FormatJSON {
+			env["items"] = items
+			env["count"] = len(items)
+			return w.encodeJSON(env)
+		}
+		return w.renderDelimited(items, "\t", w.Format != FormatTSV)
+	}
+
 	if len(w.Select) > 0 {
 		g = applySelect(g, w.Select)
 	}
@@ -58,6 +77,23 @@ func (w *Writer) Emit(v any) error {
 	default:
 		return w.renderDelimited(g, "\t", true)
 	}
+}
+
+// splitEnvelope returns the envelope map and its items slice when g is a list envelope
+// ({ schemaVersion, items: [...] }), so projection/bounding can target the items.
+func splitEnvelope(g any) (map[string]any, []any, bool) {
+	m, ok := g.(map[string]any)
+	if !ok {
+		return nil, nil, false
+	}
+	if _, ok := m["schemaVersion"]; !ok {
+		return nil, nil, false
+	}
+	items, ok := m["items"].([]any)
+	if !ok {
+		return nil, nil, false
+	}
+	return m, items, true
 }
 
 // EmitJSON forces JSON output regardless of --format (used by `schema`).
