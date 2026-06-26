@@ -64,10 +64,8 @@ func (c *AuthStatusCmd) Run(rt *Runtime) error {
 	return rt.Out.Emit(out)
 }
 
-// AuthLoginCmd reads the API key from stdin (never argv) and validates+stores it.
-type AuthLoginCmd struct {
-	Cloud bool `name:"cloud-key" help:"Store a Site Manager cloud API key (from unifi.ui.com) instead of the local console key."`
-}
+// AuthLoginCmd reads the local API key from stdin (never argv) and validates+stores it.
+type AuthLoginCmd struct{}
 
 func (c *AuthLoginCmd) Run(rt *Runtime) error {
 	key, _ := io.ReadAll(rt.Stdin)
@@ -78,13 +76,6 @@ func (c *AuthLoginCmd) Run(rt *Runtime) error {
 		}
 		return errs.New(errs.ExitUsage, "USAGE", "no API key on stdin",
 			"pipe the key in, e.g.  printf %s \"$UNIFI_API_KEY\" | ufi auth login")
-	}
-	if c.Cloud {
-		src, err := auth.SaveCloud(k)
-		if err != nil {
-			return errs.New(errs.ExitConfig, "STORE_FAILED", err.Error(), "check keyring/credential-file permissions")
-		}
-		return rt.Out.Emit(map[string]any{"ok": true, "scope": "cloud", "stored": src})
 	}
 	host := rt.Creds.Host
 	if host == "" {
@@ -217,7 +208,7 @@ func nodeToMap(n *kong.Node) map[string]any {
 	}
 	var flags []map[string]any
 	for _, f := range n.Flags {
-		if f.Name == "help" {
+		if f.Name == "help" || f.Hidden {
 			continue
 		}
 		fm := map[string]any{"name": f.Name}
@@ -241,6 +232,9 @@ func nodeToMap(n *kong.Node) map[string]any {
 	}
 	var subs []any
 	for _, ch := range n.Children {
+		if ch.Hidden {
+			continue // hidden commands (e.g. the cloud stub) are not part of the schema
+		}
 		subs = append(subs, nodeToMap(ch))
 	}
 	if len(subs) > 0 {

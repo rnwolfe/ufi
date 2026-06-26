@@ -27,15 +27,6 @@ func (rt *Runtime) local() (*unifi.Client, error) {
 	return unifi.NewLocal(rt.Creds.Host, rt.Creds.APIKey, unifi.Options{Insecure: rt.Creds.Insecure})
 }
 
-// cloud builds a Site Manager client, or a structured AUTH_REQUIRED error.
-func (rt *Runtime) cloud() (*unifi.Client, error) {
-	if rt.Creds.CloudAPIKey == "" {
-		return nil, errs.New(errs.ExitAuth, "AUTH_REQUIRED", "no Site Manager (cloud) API key configured",
-			"set UNIFI_CLOUD_API_KEY (create one at unifi.ui.com → Settings → API)")
-	}
-	return unifi.NewCloud(rt.Creds.CloudAPIKey, unifi.Options{})
-}
-
 func (rt *Runtime) listOpts() unifi.ListOpts {
 	return unifi.ListOpts{Limit: rt.Cfg.Limit, Cursor: rt.Cfg.Cursor, Page: rt.Cfg.Page}
 }

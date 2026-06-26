@@ -98,7 +98,7 @@
   prints guidance. `doctor` validates connectivity, TLS, key validity, and clock.
 
 ## Command surface (noun-verb)
-Service-namespaced. Local Integration API unless marked **(cloud)**.
+Service-namespaced. Local Integration API only (the Site Manager **cloud** surface is deferred/hidden in this build — see the `cloud` row).
 
 > **Wire vs. output naming**: the Integration API returns **camelCase** on the wire
 > (`macAddress`, `ipAddress`, `connectedAt`, `uptimeSec`, `cpuUtilizationPct`). Our JSON output
@@ -135,10 +135,7 @@ Service-namespaced. Local Integration API unless marked **(cloud)**.
 | `ufi voucher list` | read | Hotspot vouchers (`/hotspot/vouchers`) | `id`, `code`, `quota`, `duration_min`, `used`, `note`, `created_at` |
 | `ufi voucher create` | **mutation** | Generate voucher(s) (gated) | `created[]{id,code,quota,duration_min}` |
 | `ufi voucher delete <id>` | **mutation** | Delete a voucher (gated) | `id`, `deleted` |
-| `ufi cloud host list` | read **(cloud)** | UniFi OS hosts on account (`/hosts`) | `id`, `name`, `hardware`, `state`, `ip` |
-| `ufi cloud site list` | read **(cloud)** | Sites across all hosts (`/sites`) | `id`, `host_id`, `name` |
-| `ufi cloud device list` | read **(cloud)** | Devices across all sites (`/devices`) | `id`, `host_id`, `name`, `model`, `state` |
-| `ufi cloud isp-metrics` | read **(cloud)** | Internet-health / ISP metrics | `host_id`, `latency_ms`, `download_mbps`, `upload_mbps`, `uptime_pct`, `window` |
+| `ufi cloud …` | **DEFERRED** | Site Manager cloud surface | **Hidden in this build** — local-only. The `cloud` command is parseable but hidden from `--help`/`schema`; any invocation returns `UNSUPPORTED` (exit 11) with a pointer to open an issue. Re-enable once a cloud key path is validated. Planned: `cloud host list` (`/hosts`), `cloud site list` (`/sites`), `cloud device list` (`/devices`), `cloud isp-metrics`. |
 
 **Genuine official-API gaps (verified absent from on-device v1 spec — documented, not faked):**
 client **block/unblock/kick** (only guest authorize/unauthorize exists; no `BLOCK` action) and
@@ -221,8 +218,8 @@ example-led `--help` + `UFI_HELP=agent` terse mode. (`--yes`/`--force` are **not
 mutation model is the `--allow-mutations` gate + reviewed-artifact `apply <hash>`, not interactive
 confirmation, so a "skip the prompt" flag would be a dead no-op.)
 
-**Conflict check:** none. `ufi` adds only `--host`/`UNIFI_HOST`, `--insecure`/`UNIFI_INSECURE`,
-and `--cloud` (route a read through Site Manager instead of local). `--limit`/`--cursor` map to
+**Conflict check:** none. `ufi` adds only `--host`/`UNIFI_HOST`, `--site`/`UNIFI_SITE`, and
+`--insecure`/`UNIFI_INSECURE` (a `--cloud` router is deferred with the cloud surface). `--limit`/`--cursor` map to
 the API's `limit`/`offset`; `--select` is **client-side only** (the Integration API has no
 field-projection param). **Two mutation tiers** (both call `GuardMutation()` first — default-deny → `12 MUTATION_BLOCKED`):
 - **Core actions** (`device restart`, `device port-cycle`, `client authorize|unauthorize`,

@@ -37,9 +37,10 @@ untrusted-text fencing are wired and validated against real hardware. Tests: off
 mock-console integration + `unifi` unit tests, with a schema-golden CI gate (`go test ./...`).
 
 ### Known follow-ups
-- **Site Manager cloud** (`ufi cloud …`) is implemented but **unvalidated** — no cloud API key
-  was on hand at build time. Paths follow spec.md; `isp-metrics` hardcodes the `/5m` window.
-  Verify with a real key (`UNIFI_CLOUD_API_KEY` from unifi.ui.com) before relying on it.
+- **Site Manager cloud** (`ufi cloud …`) is **deferred/hidden** — local-only build. The `cloud`
+  command is a hidden stub (`cloud.go`) that returns `UNSUPPORTED` + an issue-tracker pointer; it
+  is omitted from `--help` and `schema` (nodeToMap skips hidden nodes). The client groundwork
+  (`unifi.NewCloud`, `CloudBase`) remains for re-enabling once a cloud key path is validated.
 - Server-side `--filter` (RSQL) is plumbed in the client (`unifi.ListOpts.Filter`) but not yet
   exposed as a flag — agents over-fetch then client-filter for now.
 - Config `--data` bodies are passed through opaquely (validated only as "is it JSON"); the

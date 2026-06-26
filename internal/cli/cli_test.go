@@ -112,6 +112,23 @@ func TestAgentHelpMode(t *testing.T) {
 	}
 }
 
+// The cloud surface is hidden/deferred: parseable, but returns UNSUPPORTED with an issue
+// pointer, and is absent from the schema.
+func TestCloudStubUnsupported(t *testing.T) {
+	useTempStore(t)
+	_, errb, code := run(t, "cloud", "host", "list", "--json")
+	if code != 11 {
+		t.Fatalf("exit = %d, want 11 (UNSUPPORTED)", code)
+	}
+	if !strings.Contains(errb, "issues") || !strings.Contains(errb, "UNSUPPORTED") {
+		t.Fatalf("cloud stub should point to the issue tracker: %s", errb)
+	}
+	out, _, _ := run(t, "schema")
+	if strings.Contains(out, "\"cloud\"") {
+		t.Fatalf("hidden cloud command leaked into schema")
+	}
+}
+
 func TestSchemaHasSafetyAndExitCodes(t *testing.T) {
 	useTempStore(t)
 	out, _, code := run(t, "schema")

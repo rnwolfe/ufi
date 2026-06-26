@@ -70,10 +70,6 @@
       {
         "help": "Skip TLS verification (consoles ship a self-signed cert). Off by default; warns when on.",
         "name": "insecure"
-      },
-      {
-        "help": "Route the read through the Site Manager cloud API (api.ui.com) instead of the local console.",
-        "name": "cloud"
       }
     ],
     "name": "ufi",
@@ -652,46 +648,6 @@
         "name": "apply"
       },
       {
-        "help": "Cross-host fleet reads via the Site Manager cloud API.",
-        "name": "cloud",
-        "subcommands": [
-          {
-            "help": "List UniFi OS hosts on the account.",
-            "name": "host",
-            "subcommands": [
-              {
-                "help": "List hosts.",
-                "name": "list"
-              }
-            ]
-          },
-          {
-            "help": "List sites across all hosts.",
-            "name": "site",
-            "subcommands": [
-              {
-                "help": "List sites across hosts.",
-                "name": "list"
-              }
-            ]
-          },
-          {
-            "help": "List devices across all sites.",
-            "name": "device",
-            "subcommands": [
-              {
-                "help": "List devices across sites.",
-                "name": "list"
-              }
-            ]
-          },
-          {
-            "help": "Internet-health / ISP metrics.",
-            "name": "isp-metrics"
-          }
-        ]
-      },
-      {
         "help": "Manage authentication (API keys).",
         "name": "auth",
         "subcommands": [
@@ -700,12 +656,6 @@
             "name": "status"
           },
           {
-            "flags": [
-              {
-                "help": "Store a Site Manager cloud API key (from unifi.ui.com) instead of the local console key.",
-                "name": "cloud-key"
-              }
-            ],
             "help": "Store + validate an API key (piped on stdin, never argv).",
             "name": "login"
           },

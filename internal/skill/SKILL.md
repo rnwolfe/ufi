@@ -1,18 +1,17 @@
 ---
 name: ufi
-description: Drive ufi, an agent-friendly CLI for Ubiquiti UniFi Network via the official API (local Integration + Site Manager cloud). Read-only by default; mutations require --allow-mutations.
+description: Drive ufi, an agent-friendly CLI for Ubiquiti UniFi Network via the official local Integration API. Read-only by default; mutations require --allow-mutations.
 ---
 
 # ufi
 
-An agent-focused CLI for **Ubiquiti UniFi Network**, built on Ubiquiti's **official** APIs only
-(no reverse-engineered/legacy controller API). Safe to explore: **read-only by default**, never
-prompts, structured output.
+An agent-focused CLI for **Ubiquiti UniFi Network**, built on Ubiquiti's **official local
+Integration API** only (no reverse-engineered/legacy controller API). Safe to explore:
+**read-only by default**, never prompts, structured output.
 
-Two backends:
-- **Local Integration API** (default) — talks to your console at `--host` / `UNIFI_HOST`
-  (e.g. `https://192.168.1.1`) with an `X-API-KEY`.
-- **Site Manager cloud** (`ufi cloud …`) — cross-host fleet reads + ISP metrics via `api.ui.com`.
+Talks to your console at `--host` / `UNIFI_HOST` (e.g. `https://192.168.1.1`) with an
+`X-API-KEY`. (The Site Manager *cloud* surface is not shipped in this build; `ufi cloud …`
+returns a pointer to open an issue.)
 
 ## First moves
 - `ufi schema` — machine-readable command tree, exit codes, conformance, and live safety state.
@@ -25,7 +24,6 @@ Two backends:
 `X-API-KEY` — no OAuth, no session, no refresh. Generate the key once in the console UI
 (Settings → Control Plane → Integrations → API), then provide it via env (never argv):
 - `UNIFI_HOST` (or `--host`), `UNIFI_API_KEY` for the local API.
-- `UNIFI_CLOUD_API_KEY` for Site Manager (`ufi --cloud …` / `ufi cloud …`).
 - `UNIFI_INSECURE=1` (or `--insecure`) to accept the console's self-signed cert (warns loudly).
 A UniFi API key is effectively **full admin** — treat it like a root password.
 
@@ -44,7 +42,6 @@ A UniFi API key is effectively **full admin** — treat it like a root password.
 - `ufi wifi list` · `ufi wifi get <id>` · `ufi voucher list`
 - `ufi network list|get` · `ufi firewall policy list` · `ufi firewall zone list`
   · `ufi acl list` · `ufi dns policy list` · `ufi traffic-list list`
-- Cloud: `ufi cloud host list` · `ufi cloud site list` · `ufi cloud device list` · `ufi cloud isp-metrics`
 
 ## Mutating (gated)
 Mutations are blocked unless you pass `--allow-mutations`. A blocked mutation returns exit

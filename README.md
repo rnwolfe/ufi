@@ -1,8 +1,8 @@
 # ufi
 
-An **agent-friendly CLI for Ubiquiti UniFi Network**, built on Ubiquiti's **official** APIs only
-— the local **Network Integration API** and the **Site Manager** cloud API. No reverse-engineered
-legacy controller endpoints, so it stays stable as Ubiquiti versions the API.
+An **agent-friendly CLI for Ubiquiti UniFi Network**, built on Ubiquiti's **official local
+Network Integration API**. No reverse-engineered legacy controller endpoints, so it stays stable
+as Ubiquiti versions the API. (The Site Manager *cloud* API is planned but not in this build.)
 
 `ufi` is engineered to the [Agent CLI Guidelines](https://aclig.dev): read-only by default,
 machine-discoverable (`schema --json`), structured errors + stable exit codes, bounded token
@@ -10,8 +10,8 @@ output, default-deny mutations with `--dry-run` previews, and prompt-injection f
 network-supplied text — all in a single static binary.
 
 > **Status: implemented, pre-release.** Reads, gated mutations, and the declarative-config
-> `apply <hash>` flow are wired and validated live against UniFi Network 10.4.57. The Site Manager
-> cloud commands (`ufi cloud …`) are implemented but unverified (no cloud key yet). Not yet tagged.
+> `apply <hash>` flow are wired and validated live against UniFi Network 10.4.57. Local-only for
+> now; the Site Manager cloud surface is deferred (open an issue if you want it). Not yet tagged.
 
 ## Install
 

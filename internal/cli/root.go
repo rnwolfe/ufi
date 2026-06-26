@@ -43,7 +43,6 @@ type CLI struct {
 	Host     string `env:"UNIFI_HOST" help:"UniFi console base URL or IP, e.g. https://192.168.1.1."`
 	SiteRef  string `name:"site" env:"UNIFI_SITE" help:"Site id, name, or reference (default: the only site)."`
 	Insecure bool   `env:"UNIFI_INSECURE" help:"Skip TLS verification (consoles ship a self-signed cert). Off by default; warns when on."`
-	UseCloud bool   `name:"cloud" help:"Route the read through the Site Manager cloud API (api.ui.com) instead of the local console."`
 
 	// Commands — read-first core
 	Info    InfoCmd    `cmd:"" help:"Show controller version and capabilities."`
@@ -61,8 +60,9 @@ type CLI struct {
 	TrafficList TrafficListCmd `cmd:"" name:"traffic-list" help:"Manage traffic-matching lists."`
 	Apply       ApplyCmd       `cmd:"" help:"Execute a previously previewed config plan by its hash."`
 
-	// Commands — cloud fleet (Site Manager)
-	Cloud CloudCmd `cmd:"" help:"Cross-host fleet reads via the Site Manager cloud API."`
+	// Cloud (Site Manager) is intentionally hidden — local-only for now; the stub points to the
+	// issue tracker if someone invokes it.
+	Cloud CloudCmd `cmd:"" hidden:"" help:"(unavailable — local-only build)"`
 
 	// Commands — universal contract surface
 	Auth    AuthCmd    `cmd:"" help:"Manage authentication (API keys)."`
@@ -234,7 +234,7 @@ func handleParseError(stderr io.Writer, args []string, err error) int {
 	commands := []string{
 		"info", "site", "device", "client", "wifi", "voucher",
 		"network", "firewall", "acl", "dns", "traffic-list", "apply",
-		"cloud", "auth", "doctor", "schema", "agent", "version",
+		"auth", "doctor", "schema", "agent", "version",
 	}
 	for _, a := range args {
 		if strings.HasPrefix(a, "-") {
