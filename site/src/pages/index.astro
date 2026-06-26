@@ -97,15 +97,37 @@ const exitcodes = [
         <p class="eyebrow reveal"><span class="status online" aria-hidden="true">●</span> Built on Ubiquiti's official local Integration API — no reverse-engineered endpoints.</p>
         <h1 class="reveal">An agent-friendly CLI for<br /><span class="grad">Ubiquiti UniFi Network.</span></h1>
         <p class="lede reveal">List devices, clients, WiFi, firewall, and DNS as <strong>bounded, structured JSON</strong>. Reads are safe by default; every mutation is gated behind <code>--allow-mutations</code>, and high-stakes config is reviewed by hash before it runs. <a href="https://aclig.dev/">Agent CLI Guidelines</a> baked in.</p>
-        <div class="cta reveal">
-          <code class="install" id="install">brew install rnwolfe/tap/ufi</code>
-          <button class="copy" data-copy="brew install rnwolfe/tap/ufi" aria-label="Copy install command">copy</button>
+        <div class="install-tabs reveal">
+          <input type="radio" name="inst" id="t-brew" checked />
+          <input type="radio" name="inst" id="t-go" />
+          <input type="radio" name="inst" id="t-curl" />
+          <input type="radio" name="inst" id="t-bin" />
+          <div class="tablabels" role="tablist" aria-label="Install method">
+            <label for="t-brew">Homebrew</label>
+            <label for="t-go">go</label>
+            <label for="t-curl">curl</label>
+            <label for="t-bin">binaries</label>
+          </div>
+          <div class="panels">
+            <div class="panel pan-brew">
+              <code>brew install rnwolfe/tap/ufi</code>
+              <button class="copy" data-copy="brew install rnwolfe/tap/ufi" aria-label="Copy install command">copy</button>
+            </div>
+            <div class="panel pan-go">
+              <code>go install github.com/rnwolfe/ufi/cmd/ufi@latest</code>
+              <button class="copy" data-copy="go install github.com/rnwolfe/ufi/cmd/ufi@latest" aria-label="Copy install command">copy</button>
+            </div>
+            <div class="panel pan-curl">
+              <code>curl -fsSL https://uficli.sh/install.sh | sh</code>
+              <button class="copy" data-copy="curl -fsSL https://uficli.sh/install.sh | sh" aria-label="Copy install command">copy</button>
+            </div>
+            <div class="panel pan-bin">
+              <code>Prebuilt binaries — linux/macOS/windows, amd64/arm64</code>
+              <a class="copy" href={`${repo}/releases`}>Releases →</a>
+            </div>
+          </div>
         </div>
-        <p class="alt reveal">macOS &amp; Linux · or
-          <code>go install github.com/rnwolfe/ufi/cmd/ufi@latest</code> ·
-          <code>curl -fsSL https://uficli.sh/install.sh | sh</code> ·
-          <a href={`${repo}/releases`}>prebuilt binaries</a>
-        </p>
+        <p class="alt reveal">macOS &amp; Linux · each release ships checksums, an SBOM, and build-provenance attestation.</p>
         <div class="links reveal">
           <a class="btn primary" href="/getting-started">Get started →</a>
           <a class="btn" href={repo}>Star on GitHub</a>
@@ -216,8 +238,24 @@ const exitcodes = [
       .grad { background: var(--rvr-grad-current); -webkit-background-clip: text; background-clip: text; color: transparent; }
       .lede { max-width: 46rem; margin: 1.3rem auto 0; font-size: 1.16rem; color: var(--rvr-mist); }
       .lede code { font-size: .92em; color: var(--rvr-current); }
-      .cta { display: inline-flex; align-items: stretch; margin: 2rem auto 0; border: 1px solid var(--rvr-line); border-radius: var(--rvr-radius); background: var(--rvr-ink-800); overflow: hidden; }
-      .install { padding: .8rem 1rem; color: var(--rvr-paper); font-size: .92rem; white-space: nowrap; overflow-x: auto; }
+      /* Tabbed install widget (fleet standard) — CSS-only :checked tabs, recommended (brew) default visible without JS. */
+      .install-tabs { margin: 2rem auto 0; max-width: 560px; }
+      .install-tabs > input { position: absolute; opacity: 0; pointer-events: none; }
+      .tablabels { display: inline-flex; gap: 2px; padding: 3px; background: var(--rvr-ink-800); border: 1px solid var(--rvr-line); border-radius: var(--rvr-radius); }
+      .tablabels label { font-family: var(--rvr-font-mono); font-size: .82rem; color: var(--rvr-fog); padding: .34rem .8rem; border-radius: calc(var(--rvr-radius) - 3px); cursor: pointer; transition: background .15s var(--rvr-ease), color .15s var(--rvr-ease); }
+      .tablabels label:hover { color: var(--rvr-mist); }
+      .panels { display: flex; align-items: stretch; margin-top: .7rem; border: 1px solid var(--rvr-line); border-radius: var(--rvr-radius); background: var(--rvr-ink-800); overflow: hidden; }
+      .panel { display: none; flex: 1; align-items: center; justify-content: space-between; min-width: 0; }
+      .panel code { padding: .8rem 1rem; color: var(--rvr-paper); font-family: var(--rvr-font-mono); font-size: .9rem; white-space: nowrap; overflow-x: auto; }
+      #t-brew:checked ~ .tablabels label[for="t-brew"],
+      #t-go:checked ~ .tablabels label[for="t-go"],
+      #t-curl:checked ~ .tablabels label[for="t-curl"],
+      #t-bin:checked ~ .tablabels label[for="t-bin"] { background: var(--rvr-current); color: var(--rvr-ink-900); font-weight: 600; }
+      #t-brew:checked ~ .panels .pan-brew,
+      #t-go:checked ~ .panels .pan-go,
+      #t-curl:checked ~ .panels .pan-curl,
+      #t-bin:checked ~ .panels .pan-bin { display: flex; }
+      .install-tabs:focus-within .tablabels { outline: 2px solid var(--rvr-current); outline-offset: 2px; border-radius: var(--rvr-radius); }
       .copy { border: 0; border-left: 1px solid var(--rvr-line); background: var(--rvr-ink-700); color: var(--rvr-current); font-family: var(--rvr-font-mono); padding: 0 1.1rem; cursor: pointer; font-size: .85rem; }
       .copy:hover { background: var(--rvr-ink-600); }
       .alt { font-family: var(--rvr-font-mono); font-size: .78rem; color: var(--rvr-fog); margin-top: .85rem; }
@@ -278,8 +316,9 @@ const exitcodes = [
       @media (max-width: 800px) {
         .ways .grid, .feats { grid-template-columns: 1fr; }
         .nav nav a:first-child { display: none; }
-        .cta { max-width: 100%; }
-        .install { font-size: .8rem; }
+        .install-tabs { max-width: 100%; }
+        .panel code { font-size: .78rem; }
+        .tablabels label { padding: .34rem .6rem; font-size: .76rem; }
         .console .code { font-size: .7rem; }
       }
     </style>
