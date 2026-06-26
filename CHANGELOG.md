@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-26
+
 ### Added
 - Initial release of **ufi**, an agent-focused CLI for Ubiquiti UniFi Network over the
   official local **Network Integration API** (`X-API-KEY`), built to the Agent CLI
