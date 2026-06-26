@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in ufi behaves incorrectly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! Please **never paste a real API key** — redact and rotate it
+        first (see SECURITY.md). A UniFi API key is full-admin.
+  - type: input
+    id: version
+    attributes:
+      label: ufi version
+      description: Output of `ufi version`
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: unifi
+    attributes:
+      label: UniFi Network version
+      description: From `ufi info` (or the console). Helps pin endpoint differences.
+      placeholder: "10.4.57"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS / arch
+      placeholder: "Linux x86_64 / macOS arm64"
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact command
+      description: The command you ran (redact secrets).
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected vs. what happened
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Output / error
+      description: Include the `--json` error body and exit code if relevant.
+      render: shell
+    validations:
+      required: false

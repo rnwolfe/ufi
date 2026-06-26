@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / idea
+    url: https://github.com/rnwolfe/ufi/discussions
+    about: Ask questions and share ideas in Discussions.
+  - name: Site Manager (cloud) support
+    url: https://github.com/rnwolfe/ufi/issues/new?labels=enhancement&title=cloud%3A+Site+Manager+support
+    about: ufi is local-only for now — open an issue if you want the cloud surface.
+  - name: Security vulnerability
+    url: https://github.com/rnwolfe/ufi/security/advisories/new
+    about: Report security issues privately — never in a public issue.

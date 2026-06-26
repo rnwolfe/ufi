@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.25"
 
       # .goreleaser.yaml generates SBOMs via syft, which isn't on the runner by default —
       # without this the release dies with "syft: executable file not found".

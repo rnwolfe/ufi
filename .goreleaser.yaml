@@ -26,7 +26,7 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
-    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
   name_template: "checksums.txt"
@@ -42,9 +42,11 @@ homebrew_casks:
       owner: rnwolfe
       name: homebrew-tap
       token: "{{ .Env.GORELEASER_TOKEN }}"
-    homepage: "https://github.com/rnwolfe/ufi/"
+    homepage: "https://uficli.sh/"
+    # download domain (github) ≠ homepage domain (uficli.sh) → brew audit wants `verified:`.
+    verified: "github.com/rnwolfe/ufi/"
     # brew audit: no leading article, no trailing period.
-    description: "Agent-friendly example CLI (agent-cli-factory reference)"
+    description: "Agent-friendly CLI for Ubiquiti UniFi Network over the official API"
     # Unsigned binaries get Gatekeeper-quarantined; strip the attribute on install.
     hooks:
       post:

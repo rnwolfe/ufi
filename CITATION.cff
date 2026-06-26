@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use ufi, please cite it using these metadata."
+title: ufi
+abstract: >-
+  An agent-focused CLI for Ubiquiti UniFi Network over the official local Integration API:
+  read-only by default, gated mutations with a reviewed-artifact apply<hash> flow, machine
+  -discoverable schema, stable exit codes, and prompt-injection fencing — built to the Agent
+  CLI Guidelines.
+type: software
+authors:
+  - given-names: Ryan
+    family-names: Wolfe
+repository-code: "https://github.com/rnwolfe/ufi"
+url: "https://uficli.sh"
+license: MIT
+keywords:
+  - cli
+  - ai-agents
+  - llm-tools
+  - unifi
+  - ubiquiti
+  - go
