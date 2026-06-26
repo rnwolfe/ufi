@@ -110,7 +110,7 @@ func (c *FirewallPolicyDeleteCmd) Run(rt *Runtime) error {
 }
 
 type FirewallPolicyReorderCmd struct {
-	IDs []string `arg:"" help:"Policy ids in the desired order."`
+	IDs []string `arg:"" name:"id" help:"Policy ids in the desired order."`
 }
 
 func (c *FirewallPolicyReorderCmd) Run(rt *Runtime) error {
@@ -207,7 +207,7 @@ func (c *AclDeleteCmd) Run(rt *Runtime) error {
 }
 
 type AclReorderCmd struct {
-	IDs []string `arg:"" help:"ACL rule ids in the desired order."`
+	IDs []string `arg:"" name:"id" help:"ACL rule ids in the desired order."`
 }
 
 func (c *AclReorderCmd) Run(rt *Runtime) error {

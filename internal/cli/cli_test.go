@@ -88,6 +88,30 @@ func TestApplyUnknownHash(t *testing.T) {
 	}
 }
 
+// --write is an accepted alias for --allow-mutations.
+func TestWriteAliasOpensGate(t *testing.T) {
+	useTempStore(t)
+	out, _, code := run(t, "device", "restart", "d1", "--write", "--dry-run", "--json")
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0 (--write should open the gate)", code)
+	}
+	if !strings.Contains(out, "RESTART") {
+		t.Fatalf("unexpected: %s", out)
+	}
+}
+
+// UFI_HELP=agent makes a help request print the embedded SKILL contract.
+func TestAgentHelpMode(t *testing.T) {
+	t.Setenv("UFI_HELP", "agent")
+	out, _, code := run(t, "--help")
+	if code != 0 {
+		t.Fatalf("exit = %d, want 0", code)
+	}
+	if !strings.Contains(out, "name: ufi") {
+		t.Fatalf("UFI_HELP=agent should print the embedded SKILL.md, got: %.80s", out)
+	}
+}
+
 func TestSchemaHasSafetyAndExitCodes(t *testing.T) {
 	useTempStore(t)
 	out, _, code := run(t, "schema")

@@ -30,9 +30,17 @@ type AuthStatusCmd struct{}
 
 func (c *AuthStatusCmd) Run(rt *Runtime) error {
 	cr := rt.Creds
+	// No key at all is a real problem → structured AUTH_REQUIRED (exit 4, no stdout).
+	if cr.APIKey == "" {
+		return errs.New(errs.ExitAuth, "AUTH_REQUIRED", "no local API key configured",
+			"pipe a key to `ufi auth login`, or set UNIFI_API_KEY and --host/UNIFI_HOST")
+	}
+	// Otherwise reporting status is itself a success: fold the validation outcome into the
+	// emitted object (valid + reason) and exit 0, so an agent doesn't treat an unreachable
+	// console as a retryable command failure.
 	out := map[string]any{
 		"console":       cr.Host,
-		"has_local_key": cr.APIKey != "",
+		"has_local_key": true,
 		"has_cloud_key": cr.CloudAPIKey != "",
 		"source":        cr.Source,
 		"valid":         nil,
@@ -40,23 +48,20 @@ func (c *AuthStatusCmd) Run(rt *Runtime) error {
 	if bad, p := auth.InsecureFilePerms(); bad {
 		out["warning"] = "credential file is group/other readable: " + p
 	}
-	var problem error
-	if cr.APIKey == "" {
-		problem = errs.New(errs.ExitAuth, "AUTH_REQUIRED", "no local API key configured",
-			"pipe a key to `ufi auth login`, or set UNIFI_API_KEY and --host/UNIFI_HOST")
-	} else if cr.Host != "" {
+	if cr.Host != "" {
 		if cl, err := unifi.NewLocal(cr.Host, cr.APIKey, unifi.Options{Insecure: cr.Insecure}); err == nil {
 			if ver, err := cl.Validate(rt.ctx()); err == nil {
 				out["valid"] = true
 				out["application_version"] = ver
 			} else {
 				out["valid"] = false
-				problem = err
+				out["reason"] = err.Error()
 			}
 		}
+	} else {
+		out["reason"] = "no host set; cannot validate"
 	}
-	_ = rt.Out.Emit(out)
-	return problem
+	return rt.Out.Emit(out)
 }
 
 // AuthLoginCmd reads the API key from stdin (never argv) and validates+stores it.

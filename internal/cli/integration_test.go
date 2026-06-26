@@ -31,6 +31,9 @@ func mockConsole(t *testing.T) *httptest.Server {
 			"id": "d1", "name": "AP-Living", "macAddress": "aa:bb", "model": "U6", "state": "ONLINE",
 		}})
 	})
+	mux.HandleFunc("GET "+base+"/sites/{site}/wifi/broadcasts", func(w http.ResponseWriter, r *http.Request) {
+		page(w, []map[string]any{}) // empty → exercises EMPTY (exit 3)
+	})
 	mux.HandleFunc("GET "+base+"/sites/{site}/clients", func(w http.ResponseWriter, r *http.Request) {
 		// A hostile guest-controlled name, to exercise untrusted fencing.
 		page(w, []map[string]any{{
@@ -114,6 +117,18 @@ func TestClientNameFencedLive(t *testing.T) {
 	}
 	if !strings.Contains(out, "UNTRUSTED_DATA_BEGIN") {
 		t.Fatalf("guest-controlled client name was not fenced: %s", out)
+	}
+}
+
+// An empty list resolves to EMPTY (exit 3) after emitting the envelope.
+func TestEmptyListExit3Live(t *testing.T) {
+	mockConsole(t)
+	out, _, code := run(t, "wifi", "list", "--json")
+	if code != 3 {
+		t.Fatalf("empty list exit = %d, want 3 (EMPTY)\n%s", code, out)
+	}
+	if !strings.Contains(out, "\"count\": 0") {
+		t.Fatalf("expected count 0 envelope, got: %s", out)
 	}
 }
 

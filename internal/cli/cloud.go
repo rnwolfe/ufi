@@ -1,5 +1,7 @@
 package cli
 
+import "github.com/rnwolfe/ufi/internal/unifi"
+
 // Cloud fleet reads via the Site Manager API (api.ui.com, X-API-KEY from unifi.ui.com).
 // All reads. NOTE: these paths follow spec.md but are not yet validated against a live cloud
 // account (no cloud key on hand at implement time); they degrade to a clean API error if a path
@@ -49,7 +51,7 @@ func (rt *Runtime) cloudList(path string) error {
 	}
 	if m, ok := v.(map[string]any); ok {
 		if data, ok := m["data"].([]any); ok {
-			return rt.Out.Emit(listEnvelope(data, len(data), nil))
+			return rt.emitList(&unifi.ListResult{Items: data, Count: len(data)})
 		}
 	}
 	return rt.Out.Emit(v)

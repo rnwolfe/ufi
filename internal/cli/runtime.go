@@ -37,10 +37,15 @@ func (rt *Runtime) cloud() (*unifi.Client, error) {
 }
 
 func (rt *Runtime) listOpts() unifi.ListOpts {
-	return unifi.ListOpts{Limit: rt.Cfg.Limit, Cursor: rt.Cfg.Cursor}
+	return unifi.ListOpts{Limit: rt.Cfg.Limit, Cursor: rt.Cfg.Cursor, Page: rt.Cfg.Page}
 }
 
 func (rt *Runtime) emitList(res *unifi.ListResult) error {
+	// A successful query that resolved to zero items exits EMPTY (3) after emitting the
+	// envelope — an agent can branch on the code without parsing (contract §4).
+	if res.Count == 0 {
+		rt.ExitCode = errs.ExitEmpty
+	}
 	return rt.Out.Emit(listEnvelope(res.Items, res.Count, res.NextCursor))
 }
 

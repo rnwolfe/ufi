@@ -15,6 +15,7 @@ import (
 	"github.com/rnwolfe/ufi/internal/auth"
 	"github.com/rnwolfe/ufi/internal/errs"
 	"github.com/rnwolfe/ufi/internal/output"
+	"github.com/rnwolfe/ufi/internal/skill"
 )
 
 // CLI is the kong grammar. Global flags are the universal agent-CLI contract surface;
@@ -27,15 +28,15 @@ type CLI struct {
 	Limit    int    `default:"50" help:"Maximum items to return for list operations."`
 	Select   string `help:"Comma-separated dot-path field projection, e.g. id,name."`
 	Cursor   string `help:"Opaque pagination cursor from a previous response's nextCursor."`
-	Concise  bool   `help:"Terser output (default)."`
-	Detailed bool   `help:"Richer output."`
+	Page     int    `help:"Page number (1-based), an alternative to --cursor; ignored when --cursor is set."`
+	Concise  bool   `help:"Terser output (default; accepted for contract uniformity)."`
+	Detailed bool   `help:"Richer output (reserved; accepted for contract uniformity)."`
 	NoFence  bool   `name:"no-fence" help:"Disable untrusted-text fencing of network-controlled names/notes (on by default in agent mode)."`
 
 	// Safety (contract §2)
-	AllowMutations bool `help:"Permit state-changing operations (off by default)."`
+	AllowMutations bool `aliases:"write" help:"Permit state-changing operations (off by default). Alias: --write."`
 	DryRun         bool `help:"Print intended mutations without performing them."`
-	Yes            bool `help:"Assume yes for confirmations (scripting)."`
-	Force          bool `help:"Bypass safety checks."`
+	WrapUntrusted  bool `name:"wrap-untrusted" help:"Force untrusted-text fencing on (already default in agent mode)."`
 	NoInput        bool `help:"Never prompt; fail with exit 13 instead."`
 
 	// UniFi connection
@@ -73,11 +74,12 @@ type CLI struct {
 
 // Runtime is the per-invocation context bound into every command's Run method.
 type Runtime struct {
-	Cfg   *CLI
-	Out   *output.Writer
-	Creds auth.Creds
-	Stdin io.Reader
-	Fence bool // wrap network-controlled free text as untrusted (contract §8)
+	Cfg      *CLI
+	Out      *output.Writer
+	Creds    auth.Creds
+	Stdin    io.Reader
+	Fence    bool // wrap network-controlled free text as untrusted (contract §8)
+	ExitCode int  // optional non-zero exit set by a command after emitting (e.g. EMPTY)
 }
 
 // Guard enforces the read-only-by-default mutation gate (contract §2).
@@ -88,13 +90,35 @@ func (rt *Runtime) Guard(op string) error {
 	return errs.MutationBlocked(op)
 }
 
+// helpDescription is the example-led root help (contract §5): runnable invocations first.
+const helpDescription = `An agent-friendly CLI for Ubiquiti UniFi Network over the official API.
+Read-only by default; state-changing commands require --allow-mutations.
+
+Examples:
+  ufi doctor --json                         # check host/key/connectivity
+  ufi device list --json --select id,name   # adopted devices (bounded, projected)
+  ufi client list --json --limit 20         # connected clients (paged; use --cursor/--page)
+  ufi device restart <id> --allow-mutations # a gated single-target action
+  ufi network update <id> --data @net.json --allow-mutations   # prints a plan + hash
+  ufi apply <hash> --allow-mutations        # execute exactly that previewed plan
+
+Auth: set UNIFI_HOST and UNIFI_API_KEY (or pipe a key to ` + "`ufi auth login`" + `).
+Run ` + "`ufi agent`" + ` for the full embedded usage contract, or ` + "`ufi schema`" + ` for JSON.`
+
 // Run parses args and dispatches, returning the process exit code.
 func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	// Terse agent help mode (contract §5): UFI_HELP=agent + a help request prints the
+	// machine-skimmable embedded contract instead of the full kong help.
+	if os.Getenv("UFI_HELP") == "agent" && wantsHelp(args) {
+		_, _ = io.WriteString(stdout, skill.Content)
+		return errs.ExitOK
+	}
+
 	var cfg CLI
 	helpShown := false
 	parser, err := kong.New(&cfg,
 		kong.Name("ufi"),
-		kong.Description("An agent-friendly CLI for Ubiquiti UniFi Network (official API). Read-only by default; mutations require --allow-mutations."),
+		kong.Description(helpDescription),
 		kong.Writers(stdout, stderr),
 		kong.Exit(func(int) { helpShown = true }), // --help/--version: we control exit
 	)
@@ -124,7 +148,20 @@ func Run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if err := kctx.Run(rt); err != nil {
 		return emitError(rt, err)
 	}
-	return errs.ExitOK
+	return rt.ExitCode // 0 unless a command set an override (e.g. EMPTY)
+}
+
+// wantsHelp reports whether args is a help invocation (no args, or -h/--help present).
+func wantsHelp(args []string) bool {
+	if len(args) == 0 {
+		return true
+	}
+	for _, a := range args {
+		if a == "-h" || a == "--help" {
+			return true
+		}
+	}
+	return false
 }
 
 func newRuntime(cfg *CLI, stdin io.Reader, stdout, stderr io.Writer) *Runtime {
@@ -140,8 +177,9 @@ func newRuntime(cfg *CLI, stdin io.Reader, stdout, stderr io.Writer) *Runtime {
 	}
 	creds := auth.Resolve(cfg.Host, cfg.Insecure)
 	// Agent mode = JSON output or a non-TTY stdout; fence untrusted text there by default.
+	// --wrap-untrusted forces it on; --no-fence forces it off.
 	agent := format == output.FormatJSON || !isTTY(stdout)
-	fence := !cfg.NoFence && agent
+	fence := !cfg.NoFence && (agent || cfg.WrapUntrusted)
 	return &Runtime{Cfg: cfg, Out: w, Creds: creds, Stdin: stdin, Fence: fence}
 }
 
@@ -184,9 +222,15 @@ func emitError(rt *Runtime, err error) int {
 	return ce.Exit
 }
 
-// handleParseError reports usage errors and offers a "did you mean" suggestion.
+// handleParseError reports usage errors. kong already appends its own "did you mean" for close
+// misspellings, so we only add one when kong didn't, and never second-guess a token that is
+// already a valid command (or an unknown flag).
 func handleParseError(stderr io.Writer, args []string, err error) int {
-	fmt.Fprintf(stderr, "error: %s\n", err)
+	msg := err.Error()
+	fmt.Fprintf(stderr, "error: %s\n", msg)
+	if strings.Contains(msg, "did you mean") {
+		return errs.ExitUsage
+	}
 	commands := []string{
 		"info", "site", "device", "client", "wifi", "voucher",
 		"network", "firewall", "acl", "dns", "traffic-list", "apply",
@@ -194,7 +238,10 @@ func handleParseError(stderr io.Writer, args []string, err error) int {
 	}
 	for _, a := range args {
 		if strings.HasPrefix(a, "-") {
-			continue
+			continue // unknown flag — don't suggest a command for it
+		}
+		if contains(commands, a) {
+			break // already a valid command; nothing to suggest
 		}
 		if s, ok := closest(a, commands); ok {
 			fmt.Fprintf(stderr, "  did you mean %q?\n", s)
@@ -202,4 +249,13 @@ func handleParseError(stderr io.Writer, args []string, err error) int {
 		break
 	}
 	return errs.ExitUsage
+}
+
+func contains(xs []string, s string) bool {
+	for _, x := range xs {
+		if x == s {
+			return true
+		}
+	}
+	return false
 }

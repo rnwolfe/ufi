@@ -215,9 +215,11 @@ code above.
 
 ## Universal contract surface (provided by scaffold — confirm no conflicts)
 `--format json|plain|tsv` (+ `--json` alias) · `--allow-mutations`/`--write` · `--dry-run` ·
-`--yes`/`--force` · `--no-input` · `--limit` (default 50) · `--page`/`--cursor` · `--select a,b.c`
-· `--concise` (default) / `--detailed` · `--wrap-untrusted` · `schema --json` · `agent` ·
-example-led `--help` + `UFI_HELP=agent` terse mode.
+`--no-input` · `--limit` (default 50) · `--page`/`--cursor` · `--select a,b.c`
+· `--concise` (default) / `--detailed` · `--wrap-untrusted`/`--no-fence` · `schema --json` · `agent` ·
+example-led `--help` + `UFI_HELP=agent` terse mode. (`--yes`/`--force` are **not** carried — the
+mutation model is the `--allow-mutations` gate + reviewed-artifact `apply <hash>`, not interactive
+confirmation, so a "skip the prompt" flag would be a dead no-op.)
 
 **Conflict check:** none. `ufi` adds only `--host`/`UNIFI_HOST`, `--insecure`/`UNIFI_INSECURE`,
 and `--cloud` (route a read through Site Manager instead of local). `--limit`/`--cursor` map to

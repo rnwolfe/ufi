@@ -34,7 +34,8 @@ A UniFi API key is effectively **full admin** — treat it like a root password.
 - Lists return an envelope `{ schemaVersion, items, count, nextCursor }`; page with `--cursor`.
 - `--select id,name` projects fields; `--limit N` bounds list size (default 50).
 - Data → stdout; notes/warnings/errors → stderr. Free text controlled by network devices/clients
-  (device/client/SSID/voucher names) is fenced as untrusted in agent mode.
+  (device/client/SSID/voucher names, notes) is fenced `[UNTRUSTED_DATA_BEGIN] … [UNTRUSTED_DATA_END]`
+  in agent mode; disable with `--no-fence`.
 
 ## Reading
 - `ufi info` · `ufi site list`
@@ -53,7 +54,7 @@ Low-stakes single-target actions:
 - `ufi device restart <id> --allow-mutations`
 - `ufi device port-cycle <id> <port> --allow-mutations`
 - `ufi client authorize <id> --minutes 60 --allow-mutations` · `ufi client unauthorize <id> --allow-mutations`
-- `ufi voucher create --count 5 --minutes 1440 --allow-mutations` · `ufi voucher delete <id> --allow-mutations` (idempotent)
+- `ufi voucher create "guest-pass" --minutes 1440 --count 5 --allow-mutations` (name + --minutes required) · `ufi voucher delete <id> --allow-mutations` (idempotent)
 
 High-stakes **declarative config** uses a reviewed-artifact flow (preview → apply by hash):
 - `ufi network create --data @net.json --allow-mutations` → prints a `plan` + `hash`.

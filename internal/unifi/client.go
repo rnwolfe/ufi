@@ -221,6 +221,7 @@ type ListResult struct {
 type ListOpts struct {
 	Limit  int    // max items to return across pages (CLI --limit); <=0 means one page
 	Cursor string // opaque cursor (CLI --cursor); decodes to a start offset
+	Page   int    // 1-based page (CLI --page); used only when Cursor is empty
 	Filter string // server-side RSQL filter (optional)
 }
 
@@ -232,6 +233,14 @@ func (c *Client) List(ctx context.Context, path string, opts ListOpts) (*ListRes
 	start, err := decodeCursor(opts.Cursor)
 	if err != nil {
 		return nil, errs.New(errs.ExitUsage, "USAGE", "invalid --cursor", "use the nextCursor from a prior response")
+	}
+	// --page is an alternative entry point to a start offset (only when no cursor given).
+	if opts.Cursor == "" && opts.Page > 1 {
+		limit := opts.Limit
+		if limit <= 0 {
+			limit = pageSize
+		}
+		start = (opts.Page - 1) * limit
 	}
 	want := opts.Limit
 	res := &ListResult{Items: []any{}}
